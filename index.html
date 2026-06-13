@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASU Heat Safety Dashboard</title>
+  <style>
+    :root {
+      --asu-maroon: #8C1D40;
+      --asu-gold: #FFC627;
+      --asu-black: #000000;
+      --asu-white: #FFFFFF;
+      --green: #16803c;
+      --yellow: #f2c94c;
+      --red: #c62828;
+      --gray-100: #f6f6f6;
+      --gray-200: #e7e7e7;
+      --gray-700: #444;
+      --shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, var(--asu-maroon) 0%, #4a0f22 100%);
+      color: var(--asu-black);
+      min-height: 100vh;
+    }
+
+    header {
+      color: var(--asu-white);
+      padding: 1.5rem 1rem 1rem;
+      text-align: center;
+      border-bottom: 6px solid var(--asu-gold);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 3rem);
+      letter-spacing: 0.02em;
+    }
+
+    header p {
+      margin: 0.45rem 0 0;
+      font-size: clamp(0.95rem, 2vw, 1.2rem);
+      opacity: 0.95;
+    }
+
+    main {
+      width: min(1500px, 96vw);
+      margin: 1.25rem auto 2rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      background: var(--asu-white);
+      border-radius: 18px;
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+    }
+
+    .refresh-time {
+      font-weight: 700;
+      color: var(--asu-maroon);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      display: inline-block;
+      border: 1px solid rgba(0,0,0,0.25);
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.red { background: var(--red); }
+
+    .site-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .site-card {
+      background: var(--asu-white);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .site-top {
+      padding: 1rem;
+      color: var(--asu-white);
+      background: var(--asu-maroon);
+      border-bottom: 5px solid var(--asu-gold);
+    }
+
+    .site-name {
+      margin: 0;
+      font-size: 1.15rem;
+      line-height: 1.2;
+    }
+
+    .coords {
+      margin-top: 0.35rem;
+      font-size: 0.82rem;
+      opacity: 0.95;
+      word-break: break-word;
+    }
+
+    .status-band {
+      padding: 0.8rem 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .status-green { background: var(--green); color: var(--asu-white); }
+    .status-yellow { background: var(--yellow); color: var(--asu-black); }
+    .status-red { background: var(--red); color: var(--asu-white); }
+    .status-loading { background: var(--gray-200); color: var(--gray-700); }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 0.25rem 0.55rem;
+      background: rgba(255,255,255,0.25);
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .card-body {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      flex: 1;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+
+    .metric {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 12px;
+      padding: 0.7rem;
+      min-width: 0;
+    }
+
+    .metric-label {
+      color: var(--gray-700);
+      font-size: 0.76rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .metric-value {
+      font-weight: 800;
+      font-size: 1.05rem;
+      word-break: break-word;
+    }
+
+    .section-title {
+      font-weight: 800;
+      color: var(--asu-maroon);
+      margin-bottom: 0.35rem;
+    }
+
+    .advisories, .details {
+      background: #fff9e8;
+      border-left: 5px solid var(--asu-gold);
+      border-radius: 12px;
+      padding: 0.8rem;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .details {
+      background: var(--gray-100);
+      border-left-color: var(--asu-maroon);
+    }
+
+    .small-text {
+      font-size: 0.82rem;
+      color: var(--gray-700);
+    }
+
+    .error {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    footer {
+      color: var(--asu-white);
+      text-align: center;
+      padding: 0 1rem 2rem;
+      font-size: 0.82rem;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 1100px) {
+      .site-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 640px) {
+      main { width: min(94vw, 680px); }
+      .site-grid { grid-template-columns: 1fr; }
+      .toolbar { align-items: flex-start; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .status-band { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ASU Heat Safety Dashboard</h1>
+    <p>Current NWS weather observations and heat alert status for outdoor work planning</p>
+  </header>
+
+  <main>
+    <section class="toolbar" aria-label="Dashboard summary">
+      <div>
+        <div class="refresh-time">Page loaded/refreshed: <span id="refreshTime">Loading…</span></div>
+        <div class="small-text">Data is pulled directly from National Weather Service API endpoints when this page loads.</div>
+      </div>
+      <div class="legend" aria-label="Status legend">
+        <span class="legend-item"><span class="dot green"></span> Normal / No heat alert</span>
+        <span class="legend-item"><span class="dot yellow"></span> Heat Advisory or elevated conditions</span>
+        <span class="legend-item"><span class="dot red"></span> Extreme Heat Warning or severe conditions</span>
+      </div>
+    </section>
+
+    <section id="siteGrid" class="site-grid" aria-live="polite"></section>
+  </main>
+
+  <footer>
+    Status colors are advisory aids only. Follow official ASU and department heat-safety procedures.
+  </footer>
+
+  <script>
+    const SITES = [
+      { name: 'ASU West', lat: 33.6079039, lon: -112.1609696 },
+      { name: 'ASU Downtown', lat: 33.4539316, lon: -112.0705604 },
+      { name: 'ASU Tempe', lat: 33.421, lon: -111.9340 },
+      { name: 'ASU Polytechnic', lat: 33.3061605, lon: -111.6791023 }
+    ];
+
+    const HEAT_ALERT_EVENTS = new Set([
+      'Heat Advisory',
+      'Extreme Heat Warning',
+      'Excessive Heat Warning',
+      'Excessive Heat Watch',
+      'Extreme Heat Watch'
+    ]);
+
+    const SEVERE_HEAT_EVENTS = new Set([
+      'Extreme Heat Warning',
+      'Excessive Heat Warning'
+    ]);
+
+    const grid = document.getElementById('siteGrid');
+    const refreshTime = document.getElementById('refreshTime');
+
+    function formatDateTime(date) {
+      return new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short'
+      }).format(date);
+    }
+
+    function cToF(c) {
+      return c === null || c === undefined ? null : (c * 9 / 5) + 32;
+    }
+
+    function msToMph(ms) {
+      return ms === null || ms === undefined ? null : ms * 2.236936;
+    }
+
+    function round(value, digits = 0) {
+      if (value === null || value === undefined || Number.isNaN(value)) return 'N/A';
+      return Number(value).toFixed(digits);
+    }
+
+    function calculateHeatIndexF(tempF, rh) {
+      if (tempF === null || rh === null || Number.isNaN(tempF) || Number.isNaN(rh)) return null;
+
+      // NOAA/NWS Rothfusz regression, generally used for T >= 80F and RH >= 40%.
+      // For lower values, use the simpler approximation first.
+      const simple = 0.5 * (tempF + 61.0 + ((tempF - 68.0) * 1.2) + (rh * 0.094));
+      let hi = simple;
+
+      if (simple >= 80) {
+        hi = -42.379
+          + 2.04901523 * tempF
+          + 10.14333127 * rh
+          - 0.22475541 * tempF * rh
+          - 0.00683783 * tempF * tempF
+          - 0.05481717 * rh * rh
+          + 0.00122874 * tempF * tempF * rh
+          + 0.00085282 * tempF * rh * rh
+          - 0.00000199 * tempF * tempF * rh * rh;
+
+        if (rh < 13 && tempF >= 80 && tempF <= 112) {
+          hi -= ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(tempF - 95)) / 17);
+        } else if (rh > 85 && tempF >= 80 && tempF <= 87) {
+          hi += ((rh - 85) / 10) * ((87 - tempF) / 5);
+        }
+      }
+
+      return hi;
+    }
+
+    function statusFromConditions(alerts, tempF, heatIndexF) {
+      const eventNames = alerts.map(a => a.event);
+      if (eventNames.some(event => SEVERE_HEAT_EVENTS.has(event))) {
+        return { level: 'red', label: 'Extreme Heat Alert', reason: 'Official NWS extreme/excessive heat warning is active.' };
+      }
+      if (eventNames.some(event => HEAT_ALERT_EVENTS.has(event))) {
+        return { level: 'yellow', label: 'Heat Advisory', reason: 'Official NWS heat advisory/watch is active.' };
+      }
+
+      // Local condition backup indicators. Adjust these thresholds to match ASU / department policy if needed.
+      if ((heatIndexF !== null && heatIndexF >= 110) || (tempF !== null && tempF >= 110)) {
+        return { level: 'red', label: 'Severe Conditions', reason: 'Temperature or calculated heat index is at or above 110°F.' };
+      }
+      if ((heatIndexF !== null && heatIndexF >= 100) || (tempF !== null && tempF >= 100)) {
+        return { level: 'yellow', label: 'Elevated Heat', reason: 'Temperature or calculated heat index is at or above 100°F.' };
+      }
+      return { level: 'green', label: 'Normal', reason: 'No official heat alert and conditions are below local dashboard thresholds.' };
+    }
+
+    function createCard(site) {
+      const card = document.createElement('article');
+      card.className = 'site-card';
+      card.id = site.id;
+      card.innerHTML = `
+        <div class="site-top">
+          <h2 class="site-name">${site.name}</h2>
+          <div class="coords">${site.lat}, ${site.lon}</div>
+        </div>
+        <div class="status-band status-loading">
+          <span>Loading NWS data…</span>
+          <span class="status-pill">Pending</span>
+        </div>
+        <div class="card-body">
+          <div class="metric-grid">
+            <div class="metric"><div class="metric-label">Current Temp</div><div class="metric-value">Loading…</div></div>
+            <div class="metric"><div class="metric-label">Humidity</div><div class="metric-value">Loading…</div></div>
+            <div class="metric"><div class="metric-label">Heat Index</div><div class="metric-value">Loading…</div></div>
+            <div class="metric"><div class="metric-label">Wind</div><div class="metric-value">Loading…</div></div>
+          </div>
+          <div class="advisories"><div class="section-title">Current Advisories</div>Loading…</div>
+          <div class="details"><div class="section-title">Additional Details</div>Loading…</div>
+        </div>
+      `;
+      return card;
+    }
+
+    function updateCard(site, data) {
+      const card = document.getElementById(site.id);
+      const status = statusFromConditions(data.heatAlerts, data.tempF, data.heatIndexF);
+      const band = card.querySelector('.status-band');
+      band.className = `status-band status-${status.level}`;
+      band.innerHTML = `<span>${status.label}</span><span class="status-pill">${status.level.toUpperCase()}</span>`;
+
+      const metricValues = card.querySelectorAll('.metric-value');
+      metricValues[0].textContent = `${round(data.tempF)}°F`;
+      metricValues[1].textContent = `${round(data.humidity)}%`;
+      metricValues[2].textContent = data.heatIndexF === null ? 'N/A' : `${round(data.heatIndexF)}°F`;
+      metricValues[3].textContent = `${round(data.windMph)} mph`;
+
+      const advisories = card.querySelector('.advisories');
+      if (data.heatAlerts.length) {
+        advisories.innerHTML = `<div class="section-title">Current Advisories</div>` +
+          data.heatAlerts.map(alert => `
+            <div><strong>${alert.event}</strong></div>
+            <div>${alert.headline || 'No headline provided.'}</div>
+            <div class="small-text">Effective: ${alert.effective ? formatDateTime(new Date(alert.effective)) : 'N/A'}</div>
+            <div class="small-text">Expires: ${alert.expires ? formatDateTime(new Date(alert.expires)) : 'N/A'}</div>
+          `).join('<hr>');
+      } else {
+        advisories.innerHTML = `<div class="section-title">Current Advisories</div>No active NWS heat advisory or extreme/excessive heat warning found for this point.`;
+      }
+
+      const details = card.querySelector('.details');
+      details.innerHTML = `
+        <div class="section-title">Additional Details</div>
+        <div><strong>Observed at:</strong> ${data.stationName || data.stationId || 'Nearest station unavailable'}</div>
+        <div><strong>Observation time:</strong> ${data.observationTime ? formatDateTime(new Date(data.observationTime)) : 'N/A'}</div>
+        <div><strong>Condition:</strong> ${data.textDescription || 'N/A'}</div>
+        <div><strong>Dew point:</strong> ${data.dewpointF === null ? 'N/A' : `${round(data.dewpointF)}°F`}</div>
+        <div><strong>Barometric pressure:</strong> ${data.pressurePa === null ? 'N/A' : `${round(data.pressurePa / 100, 1)} hPa`}</div>
+        <div class="small-text"><strong>Status reason:</strong> ${status.reason}</div>
+      `;
+    }
+
+    function updateCardError(site, error) {
+      const card = document.getElementById(site.id);
+      const band = card.querySelector('.status-band');
+      band.className = 'status-band status-red';
+      band.innerHTML = `<span>Data Error</span><span class="status-pill">RED</span>`;
+      card.querySelector('.card-body').innerHTML = `
+        <div class="error">Unable to load NWS data for ${site.name}.</div>
+        <div class="details"><div class="section-title">Error Detail</div>${error.message || error}</div>
+      `;
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/geo+json, application/json' }
+      });
+      if (!response.ok) {
+        throw new Error(`${response.status} ${response.statusText} while fetching ${url}`);
+      }
+      return response.json();
+    }
+
+    async function getLatestObservation(site) {
+      const pointsUrl = `https://api.weather.gov/points/${site.lat},${site.lon}`;
+      const pointData = await fetchJson(pointsUrl);
+      const stationsUrl = pointData.properties.observationStations;
+      const stationsData = await fetchJson(stationsUrl);
+      const firstStation = stationsData.features && stationsData.features[0];
+      if (!firstStation) throw new Error('No nearby NWS observation station found.');
+
+      const stationId = firstStation.properties.stationIdentifier;
+      const stationName = firstStation.properties.name;
+      const obsUrl = `https://api.weather.gov/stations/${stationId}/observations/latest`;
+      const obsData = await fetchJson(obsUrl);
+      return { obsData, stationId, stationName };
+    }
+
+    async function getHeatAlerts(site) {
+      const alertsUrl = `https://api.weather.gov/alerts/active?point=${site.lat},${site.lon}`;
+      const alertsData = await fetchJson(alertsUrl);
+      return (alertsData.features || [])
+        .map(feature => feature.properties)
+        .filter(properties => HEAT_ALERT_EVENTS.has(properties.event));
+    }
+
+    async function loadSite(site) {
+      try {
+        const [observation, heatAlerts] = await Promise.all([
+          getLatestObservation(site),
+          getHeatAlerts(site)
+        ]);
+
+        const props = observation.obsData.properties;
+        const tempF = cToF(props.temperature && props.temperature.value);
+        const humidity = props.relativeHumidity && props.relativeHumidity.value;
+        const dewpointF = cToF(props.dewpoint && props.dewpoint.value);
+        const windMph = msToMph(props.windSpeed && props.windSpeed.value);
+        const pressurePa = props.barometricPressure && props.barometricPressure.value;
+        const reportedHeatIndexF = cToF(props.heatIndex && props.heatIndex.value);
+        const calculatedHeatIndexF = calculateHeatIndexF(tempF, humidity);
+        const heatIndexF = reportedHeatIndexF !== null ? reportedHeatIndexF : calculatedHeatIndexF;
+
+        updateCard(site, {
+          tempF,
+          humidity,
+          dewpointF,
+          windMph,
+          pressurePa,
+          heatIndexF,
+          heatAlerts,
+          stationId: observation.stationId,
+          stationName: observation.stationName,
+          observationTime: props.timestamp,
+          textDescription: props.textDescription
+        });
+      } catch (error) {
+        console.error(site.name, error);
+        updateCardError(site, error);
+      }
+    }
+
+    function init() {
+      refreshTime.textContent = formatDateTime(new Date());
+      SITES.forEach((site, index) => {
+        site.id = `site-${index}`;
+        grid.appendChild(createCard(site));
+      });
+      SITES.forEach(loadSite);
+    }
+
+    init();
+  </script>
+</body>
+</html>
