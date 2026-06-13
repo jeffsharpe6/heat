@@ -1,6 +1,6 @@
 ASU Heat Safety Dashboard
 
-A responsive web dashboard that monitors weather and heat-related conditions for four Arizona State University campuses using data from the National Weather Service (NWS).
+This webpage is a responsive web dashboard that monitors weather and heat-related conditions for four Arizona State University campuses using data from the National Weather Service (NWS).
 
 Overview
 
